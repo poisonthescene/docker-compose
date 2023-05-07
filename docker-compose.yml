@@ -1,0 +1,156 @@
+# 02.20.23 Updating configs for security, moved env variables to a file to limit redundancy.
+# 08.21.22 transitioning to reverse proxy for all apps, removing exposed ports
+# 07.08.22 removing Tautulli and moving it to Plex stack
+# 03.19.22 moving from ubuntu host to alpine. updating for security.
+# 07.27.21 This version replaces Jackett with Prowlarr
+
+
+version: '3.3'
+
+services:
+  sonarr:
+    container_name: sonarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - '8989:8989'
+    volumes:
+      - /docker/pool/arr/sonarr:/config
+      - /mnt/storage/transmission:/data
+      - /mnt/video/TV:/tv
+      - /etc/localtime:/etc/localtime:ro
+    image: linuxserver/sonarr:latest
+    
+  radarr:
+    container_name: radarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - '7878:7878'
+    volumes:
+      - /docker/pool/arr/radarr:/config
+      - /mnt/storage/transmission:/data
+      - /mnt/video/Movies:/movies
+      - /mnt/video/Movies-Alice:/movies-alice
+      - /etc/localtime:/etc/localtime:ro
+    image: linuxserver/radarr:latest
+
+  radarr4k:
+    container_name: radarr4k
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - 7879:7878
+    volumes:
+      - /docker/pool/arr/radarr4k:/config
+      - /mnt/storage/transmission:/data
+      - /mnt/video/Movies-4k:/movies-4K
+      - /etc/localtime:/etc/localtime:ro
+    image: linuxserver/radarr:latest
+
+  lidarr:
+    container_name: lidarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env      
+    ports:
+      - 8686:8686
+    volumes:
+      - /docker/pool/arr/lidarr:/config
+      - /mnt/music:/music
+      - /mnt/storage/transmission:/data
+      - /etc/localtime:/etc/localtime:ro
+
+    image: linuxserver/lidarr:latest
+
+  readarr:
+    container_name: readarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env   
+    ports:
+      - 8787:8787
+    volumes:
+      - /docker/pool/arr/readarr:/config
+      - /mnt/books/audiobooks:/books 
+      - /mnt/storage/transmission:/data
+      - /etc/localtime:/etc/localtime:ro   
+    image: lscr.io/linuxserver/readarr:develop
+    
+  prowlarr:
+    container_name: prowlarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - 9696:9696    
+    volumes:
+      - /docker/pool/arr/prowlarr:/config
+      - /etc/localtime:/etc/localtime:ro
+    image: ghcr.io/linuxserver/prowlarr:develop
+
+  jackett:
+    container_name: jackett
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - 9117:9117
+    volumes:
+      - /docker/pool/arr/jackett:/config
+      - /etc/localtime:/etc/localtime:ro
+    image: linuxserver/jackett       
+        
+  transmission:
+    container_name: transmission
+    restart: unless-stopped
+    env_file:
+      - ./transmission.env
+    ports:
+      - 9091:9091
+    dns:
+      - 1.1.1.1
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    cap_add:
+      - NET_ADMIN
+    volumes:  
+      - '/mnt/storage/transmission:/data'
+      - '/etc/localtime:/etc/localtime:ro'      
+    image: haugene/transmission-openvpn:4.3.2
+        
+  bazarr:
+    container_name: bazarr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - 6767:6767
+    volumes:
+      - /docker/pool/arr/bazarr:/config
+      - /mnt/video/Movies:/movies 
+      - /mnt/video/Movies-Alice:/movies-alice
+      - /mnt/video/TV:/tv 
+      - /etc/localtime:/etc/localtime:ro
+    image: lscr.io/linuxserver/bazarr
+      
+  flaresolverr:
+    container_name: flaresolverr
+    restart: unless-stopped
+    env_file:
+      - ./arr.env
+    ports:
+      - 8191:8191   
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+
+networks:
+  default:
+    name: proxy
+    external: true
